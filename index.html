@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Infinite Star Patterns</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <canvas id="scene" aria-label="Endless luminous two-dimensional star patterns in black space"></canvas>
+
+    <header class="top-interface" aria-label="Audio">
+      <div class="audio-panel">
+        <button class="icon-button" id="audioToggle" aria-label="Start music">
+          <span class="play-glyph" aria-hidden="true"></span>
+        </button>
+        <label for="volume">Audio</label>
+        <input id="volume" class="control-range" type="range" min="0" max="100" value="56" data-control="volume" />
+        <div class="mutation-meter" aria-hidden="true"><span id="mutationMeter"></span></div>
+      </div>
+    </header>
+
+    <aside class="control-rail left-rail" aria-label="Trajectory and filters">
+      <section class="control-section" style="--accent: #54f7b9">
+        <h2>Trajectory</h2>
+        <div class="slider-block">
+          <div class="control-row">
+            <label for="circular">Circular motion</label>
+            <output id="circularOut">0</output>
+          </div>
+          <input id="circular" class="control-range" type="range" min="0" max="100" value="0" data-control="circular" />
+        </div>
+        <div class="slider-block">
+          <div class="control-row">
+            <label for="zigzag">Zigzag</label>
+            <output id="zigzagOut">0</output>
+          </div>
+          <input id="zigzag" class="control-range" type="range" min="0" max="100" value="0" data-control="zigzag" />
+        </div>
+        <div class="slider-block">
+          <div class="control-row">
+            <label for="linear">Linear motion</label>
+            <output id="linearOut">0</output>
+          </div>
+          <input id="linear" class="control-range" type="range" min="0" max="100" value="0" data-control="linear" />
+        </div>
+        <div class="slider-block">
+          <div class="control-row">
+            <label for="curvelinear">Curvelinear</label>
+            <output id="curvelinearOut">0</output>
+          </div>
+          <input id="curvelinear" class="control-range" type="range" min="0" max="100" value="0" data-control="curvelinear" />
+        </div>
+        <div class="slider-block">
+          <div class="control-row">
+            <label for="randomize">Randomize</label>
+            <output id="randomizeOut">0</output>
+          </div>
+          <input id="randomize" class="control-range" type="range" min="0" max="100" value="0" data-control="randomize" />
+        </div>
+      </section>
+
+      <section class="control-section" style="--accent: #ffbe4d">
+        <h2>Filters</h2>
+        <div class="slider-block">
+          <div class="control-row">
+            <label for="pixelate">Pixelate</label>
+            <output id="pixelateOut">0</output>
+          </div>
+          <input id="pixelate" class="control-range" type="range" min="0" max="100" value="0" data-control="pixelate" />
+        </div>
+        <div class="slider-block">
+          <div class="control-row">
+            <label for="mirror">Mirror</label>
+            <output id="mirrorOut">0</output>
+          </div>
+          <input id="mirror" class="control-range" type="range" min="0" max="100" value="0" data-control="mirror" />
+        </div>
+        <div class="slider-block">
+          <div class="control-row">
+            <label for="distort">Distort</label>
+            <output id="distortOut">0</output>
+          </div>
+          <input id="distort" class="control-range" type="range" min="0" max="100" value="0" data-control="distort" />
+        </div>
+      </section>
+    </aside>
+
+    <aside class="control-rail right-rail" aria-label="Pattern generator and lighting">
+      <section class="control-section" style="--accent: #ff67d8">
+        <h2>Pattern generator</h2>
+        <div class="slider-block">
+          <div class="control-row">
+            <label for="kaleido">Kaleido bloom</label>
+            <output id="kaleidoOut">0</output>
+          </div>
+          <input id="kaleido" class="control-range" type="range" min="0" max="100" value="0" data-control="kaleido" />
+        </div>
+        <div class="slider-block">
+          <div class="control-row">
+            <label for="pulse">Pulse rings</label>
+            <output id="pulseOut">0</output>
+          </div>
+          <input id="pulse" class="control-range" type="range" min="0" max="100" value="0" data-control="pulse" />
+        </div>
+        <div class="slider-block">
+          <div class="control-row">
+            <label for="trail">Comet trails</label>
+            <output id="trailOut">0</output>
+          </div>
+          <input id="trail" class="control-range" type="range" min="0" max="100" value="0" data-control="trail" />
+        </div>
+      </section>
+
+      <section class="control-section" style="--accent: #8bf2ff">
+        <h2>Lighting</h2>
+        <div class="slider-block">
+          <div class="control-row">
+            <label for="chiaroscuro">Chiaroscuro</label>
+            <output id="chiaroscuroOut">0</output>
+          </div>
+          <input id="chiaroscuro" class="control-range" type="range" min="0" max="100" value="0" data-control="chiaroscuro" />
+        </div>
+        <div class="slider-block">
+          <div class="control-row">
+            <label for="silhouette">Silhouette lighting</label>
+            <output id="silhouetteOut">0</output>
+          </div>
+          <input id="silhouette" class="control-range" type="range" min="0" max="100" value="0" data-control="silhouette" />
+        </div>
+        <div class="slider-block">
+          <div class="control-row">
+            <label for="rim">Rim lighting</label>
+            <output id="rimOut">0</output>
+          </div>
+          <input id="rim" class="control-range" type="range" min="0" max="100" value="0" data-control="rim" />
+        </div>
+      </section>
+    </aside>
+
+    <div class="signature" aria-hidden="true">
+      <span>Infinite Star Patterns</span>
+      <i></i>
+    </div>
+
+    <script src="./vendor/three.150.min.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
