@@ -45,20 +45,21 @@ const blackColor = new THREE.Color(0x020203);
 const radialTexture = createRadialTexture();
 
 const state = {
-  circular: 0,
+  spiral: 0,
   zigzag: 0,
   linear: 0,
-  curvelinear: 0,
+  magnetic: 0,
   randomize: 0,
   pixelate: 0,
   mirror: 0,
   distort: 0,
+  edgeWobble: 0,
   kaleido: 0,
   pulse: 0,
   trail: 0,
-  chiaroscuro: 0,
-  silhouette: 0,
-  rim: 0,
+  glowBloom: 0,
+  outlineWeight: 0,
+  depthHaze: 0,
   volume: 0.56,
 };
 
@@ -236,11 +237,11 @@ function markMutation(key, value) {
 }
 
 function aggregateEnergy() {
-  const motion = (state.circular + state.zigzag + state.linear + state.curvelinear + state.randomize) / 5;
+  const motion = (state.spiral + state.zigzag + state.linear + state.magnetic + state.randomize) / 5;
   const pattern = (state.kaleido + state.pulse + state.trail) / 3;
-  const filter = (state.pixelate + state.mirror + state.distort) / 3;
-  const light = (state.chiaroscuro + state.silhouette + state.rim) / 3;
-  return THREE.MathUtils.clamp(motion * 0.3 + pattern * 0.3 + filter * 0.2 + light * 0.2, 0, 1);
+  const filter = (state.pixelate + state.mirror + state.distort + state.edgeWobble) / 4;
+  const visual = (state.glowBloom + state.outlineWeight + state.depthHaze) / 3;
+  return THREE.MathUtils.clamp(motion * 0.3 + pattern * 0.28 + filter * 0.2 + visual * 0.22, 0, 1);
 }
 
 function animate() {
@@ -252,12 +253,12 @@ function animate() {
   const zoomSpeed = 5.6 + state.linear * 5.8 + state.randomize * 4.5 + energy * 4.4;
   zoomDepth += dt * zoomSpeed;
   camera.position.z = cameraStartZ - zoomDepth;
-  camera.position.x = Math.sin(time * 0.19 + randomMutation * 0.07) * (0.12 + state.curvelinear * 0.32);
-  camera.position.y = Math.cos(time * 0.16) * (0.08 + state.circular * 0.25);
+  camera.position.x = Math.sin(time * 0.19 + randomMutation * 0.07) * (0.12 + state.magnetic * 0.24);
+  camera.position.y = Math.cos(time * 0.16 + state.spiral * 0.8) * (0.08 + state.spiral * 0.2);
   camera.lookAt(camera.position.x, camera.position.y, camera.position.z - 28);
   document.body.dataset.zoomDepth = String(Math.round(zoomDepth));
 
-  updateLighting(time, energy);
+  updateVisualEffects(time, energy);
   updateParticleFields(time, energy);
   maybeSpawnMore(dt, energy);
   stars.forEach((star) => star.update(time, dt, energy));
@@ -276,12 +277,14 @@ function animate() {
   requestAnimationFrame(animate);
 }
 
-function updateLighting(time, energy) {
-  ambientLight.intensity = 0.38 - state.chiaroscuro * 0.22 - state.silhouette * 0.24 + energy * 0.08;
-  backLight.intensity = 0.8 + state.silhouette * 2.6 + state.rim * 2.1 + mutationPulse * 0.9;
-  renderer.toneMappingExposure = 1.02 + state.rim * 0.18 + state.chiaroscuro * 0.14 - state.silhouette * 0.08;
+function updateVisualEffects(time, energy) {
+  scene.fog.density = 0.008 + state.depthHaze * 0.035;
+  ambientLight.intensity = 0.32 + state.glowBloom * 0.22 + energy * 0.08;
+  backLight.intensity = 0.7 + state.glowBloom * 2.8 + state.outlineWeight * 1.2 + mutationPulse * 0.9;
+  renderer.toneMappingExposure = 1.02 + state.glowBloom * 0.24 - state.depthHaze * 0.16;
   backGlow.position.set(camera.position.x, camera.position.y, camera.position.z - 46);
-  backGlow.material.opacity = 0.14 + state.pulse * 0.18 + state.rim * 0.2 + mutationPulse * 0.12;
+  backGlow.material.opacity = 0.1 + state.pulse * 0.14 + state.glowBloom * 0.42 + mutationPulse * 0.12;
+  backGlow.scale.set(22 + state.glowBloom * 18, 16 + state.glowBloom * 13, 1);
   backGlow.material.color.setHSL(0.58 + Math.sin(time * 0.08) * 0.06 + state.kaleido * 0.1, 1, 0.55);
 }
 
@@ -290,12 +293,12 @@ function updateParticleFields(time, energy) {
   particleField.rotation.y = time * (0.01 + state.randomize * 0.04);
   particleField.rotation.z = Math.sin(time * 0.06) * 0.12;
   particleField.material.size = 0.042 + energy * 0.03 + mutationPulse * 0.02;
-  particleField.material.opacity = 0.34 + state.rim * 0.22 + state.pulse * 0.12;
+  particleField.material.opacity = 0.28 + state.glowBloom * 0.28 + state.pulse * 0.12 - state.depthHaze * 0.08;
 
   dustField.position.set(camera.position.x, camera.position.y, camera.position.z - 34);
   dustField.rotation.x = Math.sin(time * 0.08) * 0.18;
-  dustField.rotation.z = -time * (0.012 + state.curvelinear * 0.035);
-  dustField.material.opacity = 0.13 + energy * 0.12 + mutationPulse * 0.18;
+  dustField.rotation.z = -time * (0.012 + state.spiral * 0.05);
+  dustField.material.opacity = 0.12 + energy * 0.1 + state.depthHaze * 0.22 + mutationPulse * 0.18;
 }
 
 function seedInitialStars() {
@@ -347,6 +350,7 @@ class PatternStar {
     this.shapeData = makeShapeData(this.kind, this.seed);
     this.geometry = new THREE.ShapeGeometry(this.shapeData.shape, 12);
     this.geometry.computeBoundingSphere();
+    this.baseGeometryPositions = Float32Array.from(this.geometry.attributes.position.array);
 
     this.coreMaterial = new THREE.MeshBasicMaterial({
       color: this.palette.color,
@@ -383,6 +387,7 @@ class PatternStar {
     this.group.add(this.glow);
 
     this.outline = createOutline(this.shapeData.points, this.palette.glow);
+    this.baseOutlinePositions = Float32Array.from(this.outline.geometry.attributes.position.array);
     this.outline.renderOrder = 3;
     this.group.add(this.outline);
 
@@ -449,7 +454,7 @@ class PatternStar {
     this.group.position.set(this.basePosition.x, this.basePosition.y, camera.position.z - targetDepth);
     this.baseScale = (focus ? 1.35 : 0.9) + Math.random() * (focus ? 1.55 : 1.25);
     this.baseRotation = Math.random() * Math.PI * 2;
-    this.spin = (Math.random() - 0.5) * (0.4 + state.kaleido * 1.2);
+    this.spin = (Math.random() - 0.5) * (0.4 + state.kaleido * 1.2 + state.spiral * 0.8);
     this.kind = shapeKinds[(this.index + Math.floor(randomMutation * 3) + Math.floor(Math.random() * shapeKinds.length)) % shapeKinds.length];
     this.palette = palettes[(this.index + Math.floor(randomMutation * 5) + Math.floor(Math.random() * palettes.length)) % palettes.length];
     this.setPalette();
@@ -480,13 +485,15 @@ class PatternStar {
     const nearFade = smoothstepRange(1.5, 9, depth);
     const alpha = THREE.MathUtils.clamp(farFade * nearFade, 0, 1);
     const phase = time + this.seed + randomMutation * 0.07;
-    const motion = Math.max(state.circular, state.zigzag, state.linear, state.curvelinear, state.randomize);
+    const motion = Math.max(state.spiral, state.zigzag, state.linear, state.magnetic, state.randomize);
 
     let x = this.basePosition.x;
     let y = this.basePosition.y;
-    if (state.circular > 0) {
-      x += Math.cos(time * 0.9 + this.seed) * state.circular * 1.35;
-      y += Math.sin(time * 0.9 + this.seed) * state.circular * 1.0;
+    if (state.spiral > 0) {
+      const angle = time * (0.65 + state.spiral * 1.25) + this.seed + depth * 0.045;
+      const radius = (0.65 + Math.sin(depth * 0.06 + this.seed) * 0.35) * state.spiral;
+      x += Math.cos(angle) * radius * 2.1;
+      y += Math.sin(angle) * radius * 1.55;
     }
     if (state.zigzag > 0) {
       const step = Math.sign(Math.sin(time * 4.2 + this.seed)) || 1;
@@ -497,9 +504,13 @@ class PatternStar {
       x += this.motionDirection.x * Math.sin(time * 0.8 + this.seed) * state.linear * 1.55;
       y += this.motionDirection.y * Math.sin(time * 0.8 + this.seed) * state.linear * 1.55;
     }
-    if (state.curvelinear > 0) {
-      x += Math.sin(time * 0.62 + this.seed * 0.37) * state.curvelinear * 1.35;
-      y += Math.sin(time * 0.47 + this.seed * 0.53) * state.curvelinear * 1.1;
+    if (state.magnetic > 0) {
+      const pull = Math.sin(time * 0.7 + this.seed) * 0.5 + 0.5;
+      const strength = state.magnetic * (0.18 + pull * 0.52);
+      x *= 1 - strength;
+      y *= 1 - strength;
+      x += Math.sin(this.seed + time * 1.1) * state.magnetic * 0.45;
+      y += Math.cos(this.seed * 0.7 + time * 0.95) * state.magnetic * 0.45;
     }
     if (state.randomize > 0) {
       x += Math.sin(time * (1.2 + rand(this.seed, 9)) + randomMutation) * state.randomize * 1.2;
@@ -508,7 +519,7 @@ class PatternStar {
 
     this.group.position.x = x;
     this.group.position.y = y;
-    this.group.rotation.z = this.baseRotation + time * (this.spin + state.circular * 0.9 + state.kaleido * 1.2);
+    this.group.rotation.z = this.baseRotation + time * (this.spin + state.spiral * 1.25 + state.kaleido * 1.2);
 
     this.popBoost = Math.max(0, this.popBoost - dt * 1.8);
     const pulseScale = 1 + Math.sin(time * (2.2 + state.pulse * 4) + this.seed) * state.pulse * 0.13;
@@ -516,19 +527,23 @@ class PatternStar {
     const scale = this.baseScale * depthScale * pulseScale * (1 + this.popBoost * 0.28 + mutationPulse * 0.06);
     this.group.scale.setScalar(scale);
 
-    const silhouette = state.silhouette;
-    const darken = silhouette * 0.82 + state.chiaroscuro * 0.22;
+    this.updateEdgeWobble(time);
+
+    const hazeFade = THREE.MathUtils.lerp(1, THREE.MathUtils.clamp(1 - depth / 155, 0.1, 1), state.depthHaze);
+    const outlineBoost = state.outlineWeight;
+    const bloom = state.glowBloom;
+    const darken = state.depthHaze * 0.18;
     tmpColor.setHex(this.palette.color).lerp(blackColor, darken);
     this.coreMaterial.color.copy(tmpColor);
-    this.coreMaterial.opacity = alpha * (0.82 - silhouette * 0.22 + state.rim * 0.12);
+    this.coreMaterial.opacity = alpha * hazeFade * (0.82 + bloom * 0.08);
 
-    this.glowMaterial.opacity = alpha * (0.14 + state.rim * 0.42 + state.pulse * 0.18 + mutationPulse * 0.18);
-    this.glow.scale.setScalar(1.18 + state.rim * 0.32 + state.pulse * 0.22 + mutationPulse * 0.12);
-    this.sprite.material.opacity = alpha * (0.12 + state.rim * 0.38 + state.silhouette * 0.2 + mutationPulse * 0.16);
-    this.sprite.scale.setScalar(3.0 + state.rim * 2.4 + state.pulse * 1.2);
+    this.glowMaterial.opacity = alpha * hazeFade * (0.12 + bloom * 0.74 + state.pulse * 0.18 + mutationPulse * 0.18);
+    this.glow.scale.setScalar(1.16 + bloom * 0.72 + state.pulse * 0.22 + mutationPulse * 0.12);
+    this.sprite.material.opacity = alpha * hazeFade * (0.08 + bloom * 0.65 + mutationPulse * 0.16);
+    this.sprite.scale.setScalar(2.6 + bloom * 5.4 + state.pulse * 1.2);
 
-    this.outline.material.opacity = alpha * (0.28 + state.rim * 0.58 + state.silhouette * 0.46);
-    this.outline.scale.setScalar(1.01 + state.rim * 0.03);
+    this.outline.material.opacity = alpha * (0.24 + outlineBoost * 0.95 + bloom * 0.18);
+    this.outline.scale.setScalar(1.01 + outlineBoost * 0.11 + bloom * 0.03);
 
     this.updateKaleido(time, alpha);
     this.updatePulseRings(time, alpha);
@@ -550,6 +565,33 @@ class PatternStar {
     });
   }
 
+  updateEdgeWobble(time) {
+    const amount = state.edgeWobble;
+    const geometryPositions = this.geometry.attributes.position.array;
+    for (let i = 0; i < geometryPositions.length; i += 3) {
+      const x = this.baseGeometryPositions[i];
+      const y = this.baseGeometryPositions[i + 1];
+      const angle = Math.atan2(y, x);
+      const wave = Math.sin(angle * 7 + time * 3.2 + this.seed) * 0.07 + Math.sin(angle * 13 - time * 2.1 + this.seed * 0.3) * 0.04;
+      const scale = 1 + amount * wave;
+      geometryPositions[i] = x * scale;
+      geometryPositions[i + 1] = y * scale;
+    }
+    this.geometry.attributes.position.needsUpdate = true;
+
+    const outlinePositions = this.outline.geometry.attributes.position.array;
+    for (let i = 0; i < outlinePositions.length; i += 3) {
+      const x = this.baseOutlinePositions[i];
+      const y = this.baseOutlinePositions[i + 1];
+      const angle = Math.atan2(y, x);
+      const wave = Math.sin(angle * 7 + time * 3.2 + this.seed) * 0.075 + Math.sin(angle * 13 - time * 2.1 + this.seed * 0.3) * 0.045;
+      const scale = 1 + amount * wave;
+      outlinePositions[i] = x * scale;
+      outlinePositions[i + 1] = y * scale;
+    }
+    this.outline.geometry.attributes.position.needsUpdate = true;
+  }
+
   updatePulseRings(time, alpha) {
     const amount = state.pulse;
     this.rings.forEach((ring, i) => {
@@ -559,7 +601,7 @@ class PatternStar {
       const phase = fract(time * (0.42 + amount * 0.9) + i * 0.24 + this.seed);
       ring.scale.setScalar(1.05 + phase * (1.9 + amount * 1.8));
       ring.rotation.z = -this.group.rotation.z;
-      ring.material.opacity = alpha * amount * (1 - phase) * (0.26 + state.rim * 0.22);
+      ring.material.opacity = alpha * amount * (1 - phase) * (0.24 + state.glowBloom * 0.26 + state.outlineWeight * 0.12);
     });
   }
 
@@ -841,7 +883,7 @@ const audioEngine = {
     const frequency = 740 + value * 2400 + energy * 1900;
     this.filter.frequency.setTargetAtTime(frequency, now, 0.08);
     this.filter.Q.setTargetAtTime(0.55 + state.distort * 6 + state.pixelate * 2 + state.kaleido * 1.5, now, 0.08);
-    this.delay.delayTime.setTargetAtTime(0.11 + state.mirror * 0.13 + state.curvelinear * 0.09 + state.trail * 0.08, now, 0.08);
+    this.delay.delayTime.setTargetAtTime(0.11 + state.mirror * 0.13 + state.magnetic * 0.09 + state.trail * 0.08, now, 0.08);
     this.delayGain.gain.setTargetAtTime(0.1 + state.pulse * 0.14 + state.trail * 0.12, now, 0.08);
     if (this.playing) this.playMutationSpark(now, key);
   },

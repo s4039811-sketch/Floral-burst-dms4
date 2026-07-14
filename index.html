@@ -25,10 +25,10 @@
         <h2>Trajectory</h2>
         <div class="slider-block">
           <div class="control-row">
-            <label for="circular">Circular motion</label>
-            <output id="circularOut">0</output>
+            <label for="spiral">Spiral drift</label>
+            <output id="spiralOut">0</output>
           </div>
-          <input id="circular" class="control-range" type="range" min="0" max="100" value="0" data-control="circular" />
+          <input id="spiral" class="control-range" type="range" min="0" max="100" value="0" data-control="spiral" />
         </div>
         <div class="slider-block">
           <div class="control-row">
@@ -46,10 +46,10 @@
         </div>
         <div class="slider-block">
           <div class="control-row">
-            <label for="curvelinear">Curvelinear</label>
-            <output id="curvelinearOut">0</output>
+            <label for="magnetic">Magnetic pull</label>
+            <output id="magneticOut">0</output>
           </div>
-          <input id="curvelinear" class="control-range" type="range" min="0" max="100" value="0" data-control="curvelinear" />
+          <input id="magnetic" class="control-range" type="range" min="0" max="100" value="0" data-control="magnetic" />
         </div>
         <div class="slider-block">
           <div class="control-row">
@@ -83,10 +83,17 @@
           </div>
           <input id="distort" class="control-range" type="range" min="0" max="100" value="0" data-control="distort" />
         </div>
+        <div class="slider-block">
+          <div class="control-row">
+            <label for="edgeWobble">Edge wobble</label>
+            <output id="edgeWobbleOut">0</output>
+          </div>
+          <input id="edgeWobble" class="control-range" type="range" min="0" max="100" value="0" data-control="edgeWobble" />
+        </div>
       </section>
     </aside>
 
-    <aside class="control-rail right-rail" aria-label="Pattern generator and lighting">
+    <aside class="control-rail right-rail" aria-label="Pattern generator and visual effects">
       <section class="control-section" style="--accent: #ff67d8">
         <h2>Pattern generator</h2>
         <div class="slider-block">
@@ -113,27 +120,27 @@
       </section>
 
       <section class="control-section" style="--accent: #8bf2ff">
-        <h2>Lighting</h2>
+        <h2>Visual Effects</h2>
         <div class="slider-block">
           <div class="control-row">
-            <label for="chiaroscuro">Chiaroscuro</label>
-            <output id="chiaroscuroOut">0</output>
+            <label for="glowBloom">Glow bloom</label>
+            <output id="glowBloomOut">0</output>
           </div>
-          <input id="chiaroscuro" class="control-range" type="range" min="0" max="100" value="0" data-control="chiaroscuro" />
+          <input id="glowBloom" class="control-range" type="range" min="0" max="100" value="0" data-control="glowBloom" />
         </div>
         <div class="slider-block">
           <div class="control-row">
-            <label for="silhouette">Silhouette lighting</label>
-            <output id="silhouetteOut">0</output>
+            <label for="outlineWeight">Outline weight</label>
+            <output id="outlineWeightOut">0</output>
           </div>
-          <input id="silhouette" class="control-range" type="range" min="0" max="100" value="0" data-control="silhouette" />
+          <input id="outlineWeight" class="control-range" type="range" min="0" max="100" value="0" data-control="outlineWeight" />
         </div>
         <div class="slider-block">
           <div class="control-row">
-            <label for="rim">Rim lighting</label>
-            <output id="rimOut">0</output>
+            <label for="depthHaze">Depth haze</label>
+            <output id="depthHazeOut">0</output>
           </div>
-          <input id="rim" class="control-range" type="range" min="0" max="100" value="0" data-control="rim" />
+          <input id="depthHaze" class="control-range" type="range" min="0" max="100" value="0" data-control="depthHaze" />
         </div>
       </section>
     </aside>
