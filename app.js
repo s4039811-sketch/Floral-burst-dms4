@@ -132,7 +132,7 @@ const postUniforms = {
   uTime: { value: 0 },
   uResolution: { value: new THREE.Vector2(1, 1) },
   uPixelate: { value: 0 },
-  uMirror: { value: 0 },
+  uMirrorSides: { value: 0 },
   uDistort: { value: 0 },
   uMutation: { value: 0 },
 };
@@ -151,18 +151,30 @@ const postMaterial = new THREE.ShaderMaterial({
     uniform vec2 uResolution;
     uniform float uTime;
     uniform float uPixelate;
-    uniform float uMirror;
+    uniform float uMirrorSides;
     uniform float uDistort;
     uniform float uMutation;
     varying vec2 vUv;
 
-    void main() {
-      vec2 uv = vUv;
-      vec2 mirrored = uv;
-      if (uv.x > 0.5) {
-        mirrored.x = 1.0 - uv.x;
+    const float PI = 3.14159265359;
+    const float TAU = 6.28318530718;
+
+    vec2 kaleidoUv(vec2 uv, float sides) {
+      if (sides < 1.5) {
+        return uv;
       }
-      uv = mix(uv, mirrored, smoothstep(0.02, 0.95, uMirror));
+
+      vec2 centered = uv - 0.5;
+      float radius = length(centered);
+      float angle = atan(centered.y, centered.x);
+      float sector = TAU / sides;
+      angle = mod(angle + sector * 0.5, sector) - sector * 0.5;
+      angle = abs(angle);
+      return vec2(cos(angle), sin(angle)) * radius + 0.5;
+    }
+
+    void main() {
+      vec2 uv = kaleidoUv(vUv, uMirrorSides);
 
       vec2 wave = vec2(
         sin(uv.y * 22.0 + uTime * 2.6) + sin(uv.y * 49.0 - uTime * 1.4),
@@ -176,7 +188,15 @@ const postMaterial = new THREE.ShaderMaterial({
       uv = mix(uv, blockUv, uPixelate);
 
       vec4 color = texture2D(tDiffuse, clamp(uv, 0.0, 1.0));
-      float chroma = uDistort * 0.011 + uMutation * 0.006;
+      if (uMirrorSides > 1.5) {
+        vec2 centered = vUv - 0.5;
+        float angle = atan(centered.y, centered.x);
+        float sector = TAU / uMirrorSides;
+        float seam = abs(mod(angle + sector * 0.5, sector) - sector * 0.5);
+        float seamGlow = 1.0 - smoothstep(0.0, 0.012 + 0.002 * uMirrorSides, seam);
+        color.rgb += vec3(0.12, 0.18, 0.2) * seamGlow;
+      }
+      float chroma = uDistort * 0.011 + uMutation * 0.006 + step(1.5, uMirrorSides) * 0.0025;
       if (chroma > 0.001) {
         color.r = texture2D(tDiffuse, clamp(uv + vec2(chroma, 0.0), 0.0, 1.0)).r;
         color.b = texture2D(tDiffuse, clamp(uv - vec2(chroma, 0.0), 0.0, 1.0)).b;
@@ -203,13 +223,13 @@ function setupControls() {
   document.querySelectorAll("[data-control]").forEach((input) => {
     const key = input.dataset.control;
     const output = document.querySelector(`#${input.id}Out`);
-    if (output) output.value = input.value;
+    if (output) setOutputValue(output, key, Number(input.value) / 100, input.value);
     state[key] = key === "volume" ? Number(input.value) / 100 : Number(input.value) / 100;
 
     input.addEventListener("input", () => {
       const value = Number(input.value) / 100;
       state[key] = value;
-      if (output) output.value = input.value;
+      if (output) setOutputValue(output, key, value, input.value);
       if (key === "volume") {
         audioEngine.setVolume(value);
       }
@@ -224,6 +244,25 @@ function setupControls() {
     audioToggle.setAttribute("aria-label", playing ? "Pause music" : "Start music");
     markMutation("audio", state.volume);
   });
+}
+
+function setOutputValue(output, key, value, rawValue) {
+  const label = key === "mirror" ? mirrorLabelFromValue(value) : rawValue;
+  output.value = label;
+  output.textContent = label;
+}
+
+function mirrorSidesFromValue(value) {
+  if (value <= 0.01) return 0;
+  if (value <= 0.25) return 2;
+  if (value <= 0.5) return 4;
+  if (value <= 0.75) return 8;
+  return 16;
+}
+
+function mirrorLabelFromValue(value) {
+  const sides = mirrorSidesFromValue(value);
+  return sides === 0 ? "Off" : String(sides);
 }
 
 function markMutation(key, value) {
@@ -265,7 +304,7 @@ function animate() {
 
   postUniforms.uTime.value = time;
   postUniforms.uPixelate.value = state.pixelate;
-  postUniforms.uMirror.value = state.mirror;
+  postUniforms.uMirrorSides.value = mirrorSidesFromValue(state.mirror);
   postUniforms.uDistort.value = state.distort;
   postUniforms.uMutation.value = mutationPulse;
 
